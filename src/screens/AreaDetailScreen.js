@@ -10,8 +10,11 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Dimensions,
+  TextInput,
+  Modal,
 } from 'react-native';
-import { areasAPI } from '../services/api';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { areasAPI, predictionsAPI, emailAPI } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -19,16 +22,30 @@ const AreaDetailScreen = ({ route, navigation }) => {
   const { areaId } = route.params;
   const [area, setArea] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [latestPrediction, setLatestPrediction] = useState(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const loadAreaDetail = async () => {
     try {
       setLoading(true);
-      const response = await areasAPI.getById(areaId);
-      if (response.data) {
-        setArea(response.data);
+      const [areaRes, predictionRes] = await Promise.all([
+        areasAPI.getById(areaId),
+        predictionsAPI.getLatestByArea(areaId).catch(() => null),
+      ]);
+      
+      if (areaRes.data) {
+        setArea(areaRes.data);
       } else {
         Alert.alert('Lỗi', 'Không tìm thấy thông tin khu vực');
         navigation.goBack();
+      }
+
+      if (predictionRes?.data) {
+        setLatestPrediction(predictionRes.data);
       }
     } catch (error) {
       console.error('Error loading area detail:', error);
@@ -63,6 +80,105 @@ const AreaDetailScreen = ({ route, navigation }) => {
       default:
         return '#7f8c8d';
     }
+  };
+
+  const getPredictionStatus = (prediction) => {
+    if (!prediction || !prediction.NaturalElements || prediction.NaturalElements.length === 0) {
+      return { text: 'Chưa có dự đoán', color: '#95a5a6' };
+    }
+
+    // Lấy giá trị O2Sat để đánh giá
+    const o2Sat = prediction.NaturalElements.find(el => el.name === 'O2Sat');
+    if (o2Sat && o2Sat.PredictionNatureElement) {
+      const value = o2Sat.PredictionNatureElement.value;
+      if (value >= 80) {
+        return { text: 'Tốt', color: '#27ae60' };
+      } else if (value >= 60) {
+        return { text: 'Trung bình', color: '#f39c12' };
+      } else {
+        return { text: 'Kém', color: '#e74c3c' };
+      }
+    }
+
+    return { text: 'Trung bình', color: '#f39c12' };
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  const handleSendOTP = async () => {
+    if (!email.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập email');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Lỗi', 'Email không hợp lệ');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      console.log('Sending OTP to:', email, 'for area:', areaId);
+      const response = await emailAPI.sendOTP(email, areaId);
+      console.log('OTP sent successfully:', response.data);
+      setOtpSent(true);
+      Alert.alert('Thành công', 'Mã OTP đã được gửi đến email của bạn');
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      console.error('Error response:', error.response?.data);
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Không thể gửi mã OTP';
+      Alert.alert('Lỗi', errorMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otp.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập mã OTP');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      console.log('Verifying OTP:', otp, 'for email:', email, 'area:', areaId);
+      const response = await emailAPI.verifyOTP(email, otp, areaId);
+      console.log('OTP verified successfully:', response.data);
+      Alert.alert('Thành công', 'Đăng ký nhận thông báo thành công!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            setShowEmailModal(false);
+            setEmail('');
+            setOtp('');
+            setOtpSent(false);
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      console.error('Error response:', error.response?.data);
+      const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Mã OTP không đúng';
+      Alert.alert('Lỗi', errorMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowEmailModal(false);
+    setEmail('');
+    setOtp('');
+    setOtpSent(false);
   };
 
   if (loading) {
@@ -165,6 +281,32 @@ const AreaDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
+        {/* Card dự báo */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Thông tin dự báo</Text>
+          <View style={styles.predictionContainer}>
+            <View style={styles.predictionItem}>
+              <Text style={styles.predictionLabel}>Trạng thái</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: getPredictionStatus(latestPrediction).color },
+                ]}
+              >
+                <Text style={styles.statusText}>
+                  {getPredictionStatus(latestPrediction).text}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.predictionItem}>
+              <Text style={styles.predictionLabel}>Ngày dự báo</Text>
+              <Text style={styles.predictionValue}>
+                {formatDate(latestPrediction?.createdAt)}
+              </Text>
+            </View>
+          </View>
+        </View>
+
         {/* Card thông tin bổ sung */}
         {area.Province?.central_meridian && (
           <View style={styles.card}>
@@ -177,7 +319,103 @@ const AreaDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
         )}
+
+        {/* Nút đăng ký email */}
+        <TouchableOpacity
+          style={styles.registerButton}
+          onPress={() => setShowEmailModal(true)}
+        >
+          <Icon name="mail-outline" size={20} color="#fff" />
+          <Text style={styles.registerButtonText}>Đăng ký email thông báo</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      {/* Modal đăng ký email */}
+      <Modal
+        visible={showEmailModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Đăng ký nhận thông báo</Text>
+              <TouchableOpacity onPress={handleCloseModal}>
+                <Icon name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalDescription}>
+              Nhập email để nhận thông báo dự báo cho khu vực này
+            </Text>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="example@email.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!otpSent}
+              />
+            </View>
+
+            {otpSent && (
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Mã OTP</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nhập mã OTP"
+                  value={otp}
+                  onChangeText={setOtp}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+              </View>
+            )}
+
+            <View style={styles.modalButtons}>
+              {!otpSent ? (
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.primaryButton]}
+                  onPress={handleSendOTP}
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Gửi mã OTP</Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.secondaryButton]}
+                    onPress={handleSendOTP}
+                    disabled={submitting}
+                  >
+                    <Text style={styles.secondaryButtonText}>Gửi lại OTP</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.primaryButton]}
+                    onPress={handleVerifyOTP}
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.primaryButtonText}>Xác nhận</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -351,6 +589,131 @@ const styles = StyleSheet.create({
   additionalValue: {
     fontSize: 14,
     color: '#1a1a1a',
+    fontWeight: '600',
+  },
+  predictionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  predictionItem: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+  },
+  predictionLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  predictionValue: {
+    fontSize: 14,
+    color: '#1a1a1a',
+    fontWeight: '600',
+  },
+  statusBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  registerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2E86AB',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 8,
+    marginBottom: 16,
+    gap: 8,
+  },
+  registerButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#333',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButton: {
+    backgroundColor: '#2E86AB',
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: '#f0f0f0',
+  },
+  secondaryButtonText: {
+    color: '#666',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

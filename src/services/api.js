@@ -9,6 +9,12 @@ const api = axios.create({
   timeout: 10000,
 });
 
+// API không cần token (cho người dùng chưa đăng nhập)
+const publicApi = axios.create({
+  baseURL: BASE_URL,
+  timeout: 10000,
+});
+
 // Interceptor để tự động thêm token vào header
 api.interceptors.request.use(
   async config => {
@@ -31,10 +37,13 @@ export const authAPI = {
 
 export const areasAPI = {
   getAll: () => {
-    return api.get('/areas/all');
+    return publicApi.get('/areas/all');
+  },
+  getAllAreas: () => {
+    return publicApi.get('/areas/all');
   },
   getById: id => {
-    return api.get(`/areas/area/${id}`);
+    return publicApi.get(`/areas/area/${id}`);
   },
   create: areaData => {
     return api.post('/areas', areaData);
@@ -86,10 +95,10 @@ export const usersAPI = {
 
 export const emailAPI = {
   sendOTP: (email, area_id) => {
-    return api.post('/emails/send-otp', { email, area_id });
+    return publicApi.post('/emails/send-otp', { email, area_id });
   },
   verifyOTP: (email, otp, area_id) => {
-    return api.post('/emails/verify-otp', { email, otp_code: otp, area_id });
+    return publicApi.post('/emails/verify-otp', { email, otp_code: otp, area_id });
   },
   getSubscribers: (area_id) => {
     return api.get(`/emails/area/${area_id}/subscribers`);
@@ -120,6 +129,9 @@ export const predictionsAPI = {
   },
   getById: (id) => {
     return api.get(`/predictions/${id}`);
+  },
+  getLatestByArea: (areaId) => {
+    return publicApi.get(`/predictions/${areaId}/latest`);
   },
 };
 

@@ -23,6 +23,11 @@ import EditEmailSubscriptionScreen from './src/screens/admin/EditEmailSubscripti
 import ExpertPredictionDetailScreen from './src/screens/expert/ExpertPredictionDetailScreen';
 import ManagerEditUserScreen from './src/screens/manager/ManagerEditUserScreen';
 import ManagerAddUserScreen from './src/screens/manager/ManagerAddUserScreen';
+import ManagerPredictionDetailScreen from './src/screens/manager/ManagerPredictionDetailScreen';
+import ManagerAreaDetailScreen from './src/screens/manager/ManagerAreaDetailScreen';
+import ManagerAddAreaScreen from './src/screens/manager/ManagerAddAreaScreen';
+import ManagerEditAreaScreen from './src/screens/manager/ManagerEditAreaScreen';
+import ManagerEmailRegisterScreen from './src/screens/manager/ManagerEmailRegisterScreen';
 import ProfileScreen from './src/screens/common/ProfileScreen';
 import JobsScreen from './src/screens/common/JobsScreen';
 import EditProfileScreen from './src/screens/common/EditProfileScreen';
@@ -90,6 +95,31 @@ const App = () => {
         <Stack.Screen
           name="ManagerEditUser"
           component={ManagerEditUserScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManagerPredictionDetail"
+          component={ManagerPredictionDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManagerAreaDetail"
+          component={ManagerAreaDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManagerAddArea"
+          component={ManagerAddAreaScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManagerEditArea"
+          component={ManagerEditAreaScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManagerEmailRegister"
+          component={ManagerEmailRegisterScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen

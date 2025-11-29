@@ -65,10 +65,11 @@ const ProfileScreen = ({ navigation }) => {
     return districts.find(d => d.id === id)?.name || '-';
   };
 
-  const getRoleLabel = (role) => {
+  const getRoleLabel = (role, district) => {
     switch (role) {
       case 'admin': return 'Quản trị viên';
-      case 'manager': return 'Quản lý';
+      case 'manager': 
+        return district ? 'Quản lý cấp huyện' : 'Quản lý cấp tỉnh';
       case 'expert': return 'Chuyên gia';
       default: return role;
     }
@@ -103,7 +104,7 @@ const ProfileScreen = ({ navigation }) => {
             <Icon name="person" size={60} color="#2E86AB" />
           </View>
           <Text style={styles.name}>{profile?.username}</Text>
-          <Text style={styles.role}>{getRoleLabel(profile?.role)}</Text>
+          <Text style={styles.role}>{getRoleLabel(profile?.role, profile?.district)}</Text>
         </View>
 
         <View style={styles.card}>
