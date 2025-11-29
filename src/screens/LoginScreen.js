@@ -72,6 +72,8 @@ const LoginScreen = ({ navigation }) => {
           navigation.replace('AdminDashboard');
         } else if (userRole === 'expert') {
           navigation.replace('ExpertDashboard');
+        } else if (userRole === 'manager') {
+          navigation.replace('ManagerDashboard');
         } else {
           navigation.replace('Home');
         }

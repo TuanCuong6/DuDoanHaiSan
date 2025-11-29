@@ -9,6 +9,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import AreaDetailScreen from './src/screens/AreaDetailScreen';
 import AdminTabNavigator from './src/navigation/AdminTabNavigator';
 import ExpertTabNavigator from './src/navigation/ExpertTabNavigator';
+import ManagerTabNavigator from './src/navigation/ManagerTabNavigator';
 import AddUserScreen from './src/screens/admin/AddUserScreen';
 import EditUserScreen from './src/screens/admin/EditUserScreen';
 import AddAreaScreen from './src/screens/admin/AddAreaScreen';
@@ -20,6 +21,12 @@ import SendPredictionEmailScreen from './src/screens/admin/SendPredictionEmailSc
 import AddEmailSubscriptionScreen from './src/screens/admin/AddEmailSubscriptionScreen';
 import EditEmailSubscriptionScreen from './src/screens/admin/EditEmailSubscriptionScreen';
 import ExpertPredictionDetailScreen from './src/screens/expert/ExpertPredictionDetailScreen';
+import ManagerEditUserScreen from './src/screens/manager/ManagerEditUserScreen';
+import ManagerAddUserScreen from './src/screens/manager/ManagerAddUserScreen';
+import ProfileScreen from './src/screens/common/ProfileScreen';
+import JobsScreen from './src/screens/common/JobsScreen';
+import EditProfileScreen from './src/screens/common/EditProfileScreen';
+import ChangePasswordScreen from './src/screens/common/ChangePasswordScreen';
 
 const Stack = createStackNavigator();
 
@@ -68,6 +75,21 @@ const App = () => {
         <Stack.Screen
           name="ExpertDashboard"
           component={ExpertTabNavigator}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManagerDashboard"
+          component={ManagerTabNavigator}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManagerAddUser"
+          component={ManagerAddUserScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ManagerEditUser"
+          component={ManagerEditUserScreen}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -123,6 +145,26 @@ const App = () => {
         <Stack.Screen
           name="ExpertPredictionDetail"
           component={ExpertPredictionDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Jobs"
+          component={JobsScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ChangePassword"
+          component={ChangePasswordScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

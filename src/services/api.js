@@ -75,6 +75,13 @@ export const usersAPI = {
   deactivate: id => {
     return api.patch(`/auth/deactivate/${id}`);
   },
+  changePassword: (id, oldPassword, newPassword) => {
+    return api.post(`/auth/change-password/${id}`, { oldPassword, newPassword });
+  },
+  getPaginated: (params) => {
+    const { search = '', role = '', province = '', limit = 10, offset = 0 } = params;
+    return api.get(`/auth/paginated?search=${search}&role=${role}&province=${province}&limit=${limit}&offset=${offset}`);
+  },
 };
 
 export const emailAPI = {
@@ -125,6 +132,29 @@ export const expertPredictionsAPI = {
   },
   create: (data) => {
     return api.post('/predictions', data);
+  },
+  uploadExcel: (formData) => {
+    return api.post('/predictions/excel', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000, // 60 giây cho upload file
+    });
+  },
+  uploadExcel2: (formData) => {
+    return api.post('/predictions/excel2', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000, // 60 giây cho upload file
+    });
+  },
+  batch: (data) => {
+    return api.post('/predictions/batch', data, {
+      timeout: 120000, // 120 giây cho batch prediction
+    });
+  },
+};
+
+export const jobsAPI = {
+  getAll: (limit = 10, offset = 0) => {
+    return api.get(`/jobs?limit=${limit}&offset=${offset}`);
   },
 };
 
